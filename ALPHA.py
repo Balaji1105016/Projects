@@ -1,6 +1,6 @@
 # pip install mysql-connector-python
 # pip install google-api-python-client
-
+# pip install cryptography
 # chan_ids = ['UCYejIJpDILRa1n8ooXgvhPA'] #-->UCYhtvdk5phE11JqJXdwYpSA-->DB Record
 #             # 'UCY1kMZp36IQSyNx_9h4mpCg',
 #             # 'UCIq3h8ijNSBId8rLgwcR53A', 'UCYejIJpDILRa1n8ooXgvhPA',
@@ -16,6 +16,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from urllib.parse import quote_plus as pl
 import pymysql
+from PIL import Image
 
 api_key = 'AIzaSyAYfwOFHkD04T-r7ZsH7RN_UnZCFjaa3zs'
 api_service_name = "youtube"
@@ -23,8 +24,18 @@ api_version = "v3"
 youtube = build(api_service_name, api_version, developerKey=api_key)
 
 
-st.title("ALPHA-THE B😃T")
-st.write("Note: ALPHA-THE B😃T Is A User-Friendly Web Application That Allows Users To Perform Data Scrapping By Using YouTube API And Data Migration And Will Provide Some Meaningful Insights About YouTube Data To Users Who Are Accessing This Application.")
+# Image Details:
+st.title("ALPHA-THE BOT")
+st.subheader("By")
+img_path = r"C:\Users\Balaji\Music\Personal_Pic\Balaji_pic.jpeg"
+img = Image.open(img_path)
+# Show the image using Streamlit
+st.image(img, caption="""Name: BALAJI BALAKRISHNAN(Data Engineer)\n
+         
+                         Linkedin URL: www.linkedin.com/in/balaji-balakrishnan-34471b167""", use_column_width=True)
+st.write("Note: ALPHA-THE BOT Is A User-Friendly Web Application That Allows Users To Perform Data Scrapping By Using YouTube API And Data Migration And Will Provide Some Meaningful Insights About YouTube Data To Users Who Are Accessing This Application.")
+
+
 # Login and Logout Section:
 if 'login_status' not in st.session_state:
     st.session_state.login_status = False
@@ -46,7 +57,8 @@ if st.session_state.login_status:
         if 'login_status' in st.session_state:
             st.session_state.login_status = False
             st.experimental_rerun()
-                
+            
+    # Application Section            
     st.sidebar.header("Featues:")
     st.sidebar.subheader("""
                     
@@ -57,7 +69,7 @@ if st.session_state.login_status:
                     
                     """)
     st.sidebar.header("Application Process Overview")
-    st.sidebar.subheader("""
+    st.sidebar.write("""
                          1. Setting Up A Streamlit App\n
                          2. Connecting To The YouTube API\n
                          3. Storing The Scrapped Data In Mongo DB\n
@@ -75,7 +87,7 @@ if st.session_state.login_status:
     st.sidebar.markdown("https://www.youtube.com/watch?v=D12v4rTtiYM")
     st.sidebar.header("How To Get The API Key And How To Enable YouTube Data API V3 Service")
     st.sidebar.markdown("https://www.youtube.com/watch?v=pP4zvduVAqo")
-    st.subheader(".........You Tube Data Harvesting & Data WareHousing........")
+    st.subheader("......YouTube Data Harvesting & Data WareHousing......")
     st.subheader("Data Scrapping")
     
     # Data Scrapping Section
@@ -205,7 +217,7 @@ if st.session_state.login_status:
         st.dataframe(com_df)
 
 
-    # MongoDB - Data Migration Section:
+    #Data Migration Section:
     st.subheader("Data Migration")
     c_ids = st.text_input("Enter the channel_ID Which You Want To Migrate:")
     migration_button = st.button("Migrate Data")
@@ -373,13 +385,7 @@ if st.session_state.login_status:
                     st.write("Invalid Data Structure For Entry.")
                     st.write(f"Problematic Entry: {entry}")
     
-    #Record Fetch From MongoDB:
-        
-    # st.subheader("Data Migration - SQL DB")
-    # fetch_button = st.button("My-SQL Work Bench Data Migration")
-
-    # if fetch_button:
-    #     # Fetch all records from the MongoDB collection
+            #Record Fetch From MongoDB:
             passcode = pl("Balaji@123")
             uri = f"mongodb+srv://balaji:{passcode}@cluster0.9baxl7q.mongodb.net/?retryWrites=true&w=majority"
 
@@ -638,117 +644,3 @@ if st.session_state.login_status:
                 """)
             
         conn.close()
-    
-
-    
-
-
-
-
-
-    
-    
-    
-    
-    
-
-    
-
-    
-    
-    
-    
-
-        
-
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-
-    # # Fetching data from MongoDB based on the list of channel IDs
-    # chan_ids_list = mycol.distinct('Channel_Details.Chan_id')
-
-    # # Check if any channel IDs were obtained
-    # if chan_ids_list:
-    #     # Fetch all documents with matching channel IDs
-    #     query = {'Channel_Details.Chan_id': {'$in': chan_ids_list}}
-    #     cursor = mycol.find(query)
-        
-    #     # Convert the cursor to a list of dictionaries
-    #     data_list = list(cursor)
-
-    #     # Check if any documents were found
-    #     if data_list:
-    #         # Create separate dataframes for each type of data
-    #         M_C_df = pd.DataFrame([item['Channel_Details'] for item in data_list])
-    #         M_P_df = pd.DataFrame([item['Playlist_Details'] for item in data_list])
-    #         M_V_df = pd.DataFrame([item['Video_Details'] for item in data_list])
-    #         M_CM_df = pd.DataFrame([item['Comment_Details'] for item in data_list])
-
-    #         # Proceed with using the dataframes
-    #         st.success("Data fetched from MongoDB successfully.")
-    #     else:
-    #         st.warning("No data found for the specified channel IDs.")
-    # else:
-    #     st.warning("No channel IDs found in MongoDB.")
-
-
- 
-    
-    
-    
-    # Channel_ID Check:
-# def is_channel_data_in_mongo(channel_id, mycol):
-#     existing_data = mycol.find_one({"Channel_Details.Chan_id": channel_id})
-#     if existing_data:
-#         st.warning(f"The Channel_ID {channel_id} is already existed in MongoDB. No need for Data Scraping")
-#     else:
-#         st.success(f"The Channel_ID {channel_id} is not existed in MongoDB. You can go ahead for Data Scraping.")
