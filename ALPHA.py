@@ -1,6 +1,7 @@
 # pip install mysql-connector-python
 # pip install google-api-python-client
 # pip install cryptography
+# pip install pillow
 # chan_ids = ['UCYejIJpDILRa1n8ooXgvhPA'] #-->UCYhtvdk5phE11JqJXdwYpSA-->DB Record
 #             # 'UCY1kMZp36IQSyNx_9h4mpCg',
 #             # 'UCIq3h8ijNSBId8rLgwcR53A', 'UCYejIJpDILRa1n8ooXgvhPA',
@@ -60,12 +61,11 @@ if st.session_state.login_status:
             
     # Application Section            
     st.sidebar.header("Featues:")
-    st.sidebar.subheader("""
+    st.sidebar.write("""
                     
-                    Easy To Interact\n 
-                    Users Can Scrap Multiple Channels At A Time\n
-                    Data Migration\n
-                    Can Able To Get Some Meningfull Insights
+                    1. Easy To Interact\n 
+                    2. Data Migration\n
+                    3. Can Able To Get Some Meaningfull Insights\n
                     
                     """)
     st.sidebar.header("Application Process Overview")
@@ -88,40 +88,37 @@ if st.session_state.login_status:
     st.sidebar.header("How To Get The API Key And How To Enable YouTube Data API V3 Service")
     st.sidebar.markdown("https://www.youtube.com/watch?v=pP4zvduVAqo")
     st.subheader("......YouTube Data Harvesting & Data WareHousing......")
-    st.subheader("Data Scrapping")
     
     # Data Scrapping Section
-    chan_ids = st.text_input("Enter the channel ID:")
-    unique_chan_ids = set(chan_ids.split(","))
+    st.subheader("Data Scrapping")
+    st.warning("Note: Please Provide The Channel_ID's One By One At A Time For Data Scrapping")
+    chan_id = st.text_input("Enter the channel ID:")
     scraping_button = st.button("Scrape Data")
-
+    
     if scraping_button:
         chan_result = []
-
-        def get_c_data(unique_chan_ids):
-            for chan_id in unique_chan_ids:
-                req = youtube.channels().list(part="snippet, statistics, contentDetails", id=chan_id.strip())
-                resp = req.execute()
+        if len(chan_id) == 24:  
+                def get_ch_data(chan_id):
+                    req = youtube.channels().list(part="snippet, statistics, contentDetails", id=chan_id)
+                    resp = req.execute()
+                    c_data = {
+                        'Chan_id': resp['items'][0]['id'],
+                        'Chan_name': resp['items'][0]['snippet']['title'],
+                        'chan_published_At': resp['items'][0]['snippet']['publishedAt'],
+                        'Chan_playlist_id': resp['items'][0]['contentDetails']['relatedPlaylists']['uploads'],
+                        'Chan_des': resp['items'][0]['snippet']['description'],
+                        'Sub_count': resp['items'][0]['statistics']['subscriberCount'],
+                        'Chan_view_count': resp['items'][0]['statistics']['viewCount'],
+                        'Total_video_count': resp['items'][0]['statistics']['videoCount']
+                    }
+                    chan_result.append(c_data)
+                    return chan_result
                 
-                for i in range(len(resp['items'])):
-                    c_data = {'Chan_id': resp['items'][i]['id'],
-                        'Chan_name': resp['items'][i]['snippet']['title'],
-                        'chan_published_At': resp['items'][i]['snippet']['publishedAt'],
-                        'Chan_playlist_id': resp['items'][i]['contentDetails']['relatedPlaylists']['uploads'],
-                        'Chan_des': resp['items'][i]['snippet']['description'],
-                        'Sub_count': resp['items'][i]['statistics']['subscriberCount'],
-                        'Chan_view_count': resp['items'][i]['statistics']['viewCount'],
-                        'Total_video_count': resp['items'][i]['statistics']['videoCount']}
-                    chan_result.append(c_data)  
-
-            return chan_result
-        
-        
-        channel_data = get_c_data(unique_chan_ids)
+        c_d = get_ch_data(chan_id)
+            # playlist_ids = [chan['Chan_playlist_id'] for chan in c_d]
         st.subheader("Channel Information")
-        st.dataframe(pd.DataFrame(channel_data))
-        chan_df = pd.DataFrame(channel_data)
-        playlist_ids = [chan['Chan_playlist_id'] for chan in channel_data]
+        st.dataframe(pd.DataFrame(c_d))
+        playlist_ids = [chan['Chan_playlist_id'] for chan in c_d]
         
         # Playlist Details
         vid = []
@@ -217,174 +214,49 @@ if st.session_state.login_status:
         st.dataframe(com_df)
 
 
-    #Data Migration Section:
-    st.subheader("Data Migration")
-    c_ids = st.text_input("Enter the channel_ID Which You Want To Migrate:")
-    migration_button = st.button("Migrate Data")
-
-    if migration_button:
-        if len(c_ids) == 24 and c_ids.isalnum():  
-            def get_ch_data(c_ids):
-                req = youtube.channels().list(part="snippet, statistics, contentDetails", id=c_ids.strip())
-                resp = req.execute()
-                chan_result = []
-                c_data = {
-                    'Chan_id': resp['items'][0]['id'],
-                    'Chan_name': resp['items'][0]['snippet']['title'],
-                    'chan_published_At': resp['items'][0]['snippet']['publishedAt'],
-                    'Chan_playlist_id': resp['items'][0]['contentDetails']['relatedPlaylists']['uploads'],
-                    'Chan_des': resp['items'][0]['snippet']['description'],
-                    'Sub_count': resp['items'][0]['statistics']['subscriberCount'],
-                    'Chan_view_count': resp['items'][0]['statistics']['viewCount'],
-                    'Total_video_count': resp['items'][0]['statistics']['videoCount']
-                }
-                chan_result.append(c_data)
-                return chan_result
-
-            c_d = get_ch_data(c_ids)
-            playlist_ids = [chan['Chan_playlist_id'] for chan in c_d]
-            st.subheader("Channel Details")
-            st.dataframe(pd.DataFrame(c_d))
-
-
-    # Playlist Details:
-            pl_d = []
-            pagetoken = None
-            for playlist_id in playlist_ids:
-                while True:
-                    req = youtube.playlistItems().list(part='id,status,snippet,contentDetails', playlistId=playlist_id, maxResults=10, pageToken=pagetoken)
-                    res = req.execute()
-
-                    for item in res.get('items', []):
-                        playlist_info = {
-                            'Chan_playlist_id': item['snippet']['playlistId'],
-                            'video_id': item['snippet']['resourceId']['videoId']}
-                        pl_d.append(playlist_info)
-                    pagetoken = res.get('nextPageToken')
-
-                    if not pagetoken:
-                        break
-            st.subheader("Playlist Details")
-            st.dataframe(pd.DataFrame(pl_d))
-
-    # Video Details:
-            vid_data = []
-            page_token = None
-            while True:
-                for playlist_info in pl_d:
-                    video_id = playlist_info['video_id']
-                    request = youtube.videos().list(part='snippet,contentDetails,statistics', id=video_id, maxResults=50, pageToken=page_token)
-                    response = request.execute()
-                    
-                    for j in response.get('items', []):
-                        snip = j['snippet']
-                        stat = j['statistics']
-                        cont = j['contentDetails']
-
-                        video_info = {
-                            'video_id': j['id'],
-                            'title': snip['title'],
-                            'des': snip.get('description', 'Not_Available'),
-                            'published_at': snip['publishedAt'],
-                            'viewCount': stat.get('viewCount', 0),
-                            'like_count': stat.get('likeCount', 0),
-                            'dislike_count': stat.get('dislikeCount', 0),
-                            'fav_count': stat.get('favoriteCount', 0),
-                            'duration': cont.get('duration', 0),
-                            'thum_url': snip['thumbnails']['default']['url'],
-                            'caption_status': cont.get('caption', 'Not_Available')
-                        }
-                        vid_data.append(video_info)
-                page_token = response.get('nextPageToken')
-
-                if not page_token:
-                    break
-
-            st.subheader("Video Details")
-            st.dataframe(pd.DataFrame(vid_data))
-
-    # Comment_Details:
-            com_data = []
-            p_tokken = None
-            com_limit = 2
-
-            while True:
-                
-                for one_vid_id in vid_data:
-                    
-                    comment_request = youtube.commentThreads().list(part="snippet,replies", maxResults=50,videoId=one_vid_id['video_id'], pageToken=p_tokken)
-                    comment_response = comment_request.execute()
-
-                    for k in comment_response.get('items',[])[:com_limit]:
-                        out_snippet = k['snippet']['topLevelComment']
-                        in_snippet = k['snippet']['topLevelComment']['snippet']
-                        comment_info = {
-                            'comment_id': out_snippet['id'],
-                            'video_id': k['snippet']['videoId'],
-                            'comment_text': in_snippet['textDisplay'],
-                            'Author': in_snippet['authorDisplayName'],
-                            'Published_date': in_snippet['publishedAt']}
-                        com_data.append(comment_info)
-
-                    p_tokken = comment_response.get('nextPageToken')
-                if not p_tokken:
-                    break
-
-            st.subheader("Comment Details")
-            st.dataframe(pd.DataFrame(com_data))
+        cn = chan_result
+        plyl = vid
+        vi_d = vid_data
+        Com_m = com_data
+        coll_data = [{'Channel_Details': cn, 'Playlist_Details': plyl, 'Video_Details': vi_d, 'Comment_Details': Com_m}]
         
+        # MongoDB Integration:
+        passcode = pl("Balaji@123")
+        uri = f"mongodb+srv://balaji:{passcode}@cluster0.9baxl7q.mongodb.net/?retryWrites=true&w=majority"
 
-            cn = c_d 
-            plyl = pl_d 
-            vi_d = vid_data
-            Com_m = com_data 
-            coll_data = [{'Channel_Details': cn, 'Playlist_Details': plyl, 'Video_Details': vi_d, 'Comment_Details': Com_m}]
-            
-            # MongoDB Integration:
-            passcode = pl("Balaji@123")
-            uri = f"mongodb+srv://balaji:{passcode}@cluster0.9baxl7q.mongodb.net/?retryWrites=true&w=majority"
+        # Create a new client and connect to the server
+        client = MongoClient(uri, server_api=ServerApi('1'))
 
-            # Create a new client and connect to the server
-            client = MongoClient(uri, server_api=ServerApi('1'))
-
-            # Send a ping to confirm a successful connection
-            try:
-                client.admin.command('ping')
-                print("!!!!!!!!!!!!!!!..........Hi Balaji,Now your python code is connected with MongoDB.......!!!!!!!!!!!!!")
-            except Exception as e:
-                print(e)
-                    
-            db = client["Youtube_DB"]#-->The Db will be created
-            mycol = db['Youtube_Table1']
+        # Send a ping to confirm a successful connection
+        try:
+            client.admin.command('ping')
+            print("!!!!!!!!!!!!!!!..........Hi Balaji,Now your python code is connected with MongoDB.......!!!!!!!!!!!!!")
+        except Exception as e:
+            print(e)
                 
-            # Record Insertion and Duplicate Check:
-            for entry in coll_data:
-                # Check if entry is a dictionary
-                if isinstance(entry, dict):
-                    # Check if 'Channel_Details' key is present and is a list
-                    if 'Channel_Details' in entry and isinstance(entry['Channel_Details'], list):
-                        # Iterate over the list of channel details dictionaries
-                        for channel_details_dict in entry['Channel_Details']:
-                            # Check if 'Chan_id' key is present in the channel details dictionary
-                            if 'Chan_id' in channel_details_dict:
-                                c_i = channel_details_dict['Chan_id']
-                                existing_record = mycol.find_one({'Channel_Details.Chan_id': c_i})
-
-                                if existing_record is None:
-                                    # Record does not exist, insert it
-                                    mycol.insert_one(entry)
-                                    st.write(f"Record For Channel {c_i} Migrated Successfully.")
-                                else:
-                                    st.write(f"Record For Channel {c_i} Already Exists, Skipping Migration.")
-                            else:
-                                st.write("Missing 'Chan_id' Key In 'Channel_Details'.")
-                    else:
-                        st.write("Invalid Data Structure For 'Channel_Details'.")
-                        st.write(f"Problematic Entry: {entry}")
+        db = client["Youtube_DB"]#-->The Db will be created
+        mycol = db['Youtube_Table1']
+            
+        # Record Insertion and Duplicate Check:
+        for entry in coll_data:
+            for channel_details_dict in entry['Channel_Details']:
+                c_i = channel_details_dict['Chan_id']
+                existing_record = mycol.find_one({'Channel_Details.Chan_id': c_i})
+                if existing_record is None:
+                    mycol.insert_one(entry)
+                    st.success(f"Record For Channel {c_i} Successfully Scrapped.")
                 else:
-                    st.write("Invalid Data Structure For Entry.")
-                    st.write(f"Problematic Entry: {entry}")
+                    st.error(f"Record For Channel {c_i} Already Scrapped,Please provide another Channel_ID")
+        
+        
+   
     
+            
+    # Data Migration:        
+    st.subheader("Data Migration")
+    input = st.text_input("Enter The Channel_ID You Want To Migrate")
+    migration = st.button("Migrate Data")
+    if migration:      
             #Record Fetch From MongoDB:
             passcode = pl("Balaji@123")
             uri = f"mongodb+srv://balaji:{passcode}@cluster0.9baxl7q.mongodb.net/?retryWrites=true&w=majority"
@@ -393,24 +265,13 @@ if st.session_state.login_status:
             client = MongoClient(uri, server_api=ServerApi('1'))
             db = client["Youtube_DB"]#-->The Db will be created
             mycol = db['Youtube_Table1']
-            all_records = mycol.find()
-
-            M_C_df_list = []
-            M_P_df_list = []
-            M_V_df_list = []
-            M_CM_df_list = []
-            # Process each record
-            for record in all_records:
-                M_C_df_list.append(pd.DataFrame(list(record.get('Channel_Details', []))))
-                M_P_df_list.append(pd.DataFrame(list(record.get('Playlist_Details', []))))
-                M_V_df_list.append(pd.DataFrame(list(record.get('Video_Details', []))))
-                M_CM_df_list.append(pd.DataFrame(list(record.get('Comment_Details', []))))
-
-            # Concatenate DataFrames
-            M_C_df = pd.concat(M_C_df_list, ignore_index=True)
-            M_P_df = pd.concat(M_P_df_list, ignore_index=True)
-            M_V_df = pd.concat(M_V_df_list, ignore_index=True)
-            M_CM_df = pd.concat(M_CM_df_list, ignore_index=True)
+            
+            chan_id = input
+            Data_Modified_1 = mycol.find_one({'Channel_Details.Chan_id':chan_id})
+            M_C_df = pd.DataFrame(list(Data_Modified_1['Channel_Details']))
+            M_P_df = pd.DataFrame(list(Data_Modified_1['Playlist_Details']))
+            M_V_df = pd.DataFrame(list(Data_Modified_1['Video_Details']))
+            M_CM_df = pd.DataFrame(list(Data_Modified_1['Comment_Details']))
 
             # Display DataFrames
             st.header("Fetched Records From Mongo DB")
@@ -423,83 +284,74 @@ if st.session_state.login_status:
             st.subheader("Comment Details")
             st.dataframe(M_CM_df)
 
-            # SQL Integration:
-            myconnection_1 = pymysql.connect(host='127.0.0.1', user='root', password='test', database='Youtubedb_ST_FINAL_1')
-            cur_1 = myconnection_1.cursor()
+            
+            try:
+                # SQL Data Migration:
+                myconnection_1 = pymysql.connect(host='127.0.0.1', user='root', password='test', database='Youtubedb_ST_FINAL_1')
+                cur_1 = myconnection_1.cursor()
 
-            # Record Insertion:
-            cur_1.execute('CREATE TABLE IF NOT EXISTS Channel ('
-                    'Chan_id VARCHAR(30) PRIMARY KEY,'
-                    'Chan_name VARCHAR(30),'
-                    'chan_published_At VARCHAR(30),'
-                    'Chan_playlist_id  VARCHAR(30) UNIQUE NOT NULL,'
-                    'Chan_des MEDIUMTEXT,'
-                    'Sub_count INT,'
-                    'Chan_view_count INT,'
-                    'Total_video_count INT)')
+                # Record Insertion:
+                cur_1.execute('CREATE TABLE IF NOT EXISTS Channel ('
+                        'Chan_id VARCHAR(30) PRIMARY KEY,'
+                        'Chan_name VARCHAR(30),'
+                        'chan_published_At VARCHAR(30),'
+                        'Chan_playlist_id  VARCHAR(30) UNIQUE NOT NULL,'
+                        'Chan_des MEDIUMTEXT,'
+                        'Sub_count INT,'
+                        'Chan_view_count INT,'
+                        'Total_video_count INT)')
 
-            c_sql = 'Insert into Channel(Chan_id,Chan_name,chan_published_At,Chan_playlist_id,Chan_des,Sub_count,Chan_view_count,Total_video_count)values(%s,%s,%s,%s,%s,%s,%s,%s)'
-            for z in range(0,len(M_C_df)):
-                cur_1.execute(c_sql,tuple(M_C_df.iloc[z]))#-->z
-                myconnection_1.commit()
-                
-            cur_1.execute('CREATE TABLE IF NOT EXISTS Playlist ('
-                    'Chan_playlist_id VARCHAR(30) REFERENCES Channel(Chan_playlist_id),'
-                    'video_id VARCHAR(30) UNIQUE NOT NULL)')
+                c_sql = 'Insert into Channel(Chan_id,Chan_name,chan_published_At,Chan_playlist_id,Chan_des,Sub_count,Chan_view_count,Total_video_count)values(%s,%s,%s,%s,%s,%s,%s,%s)'
+                for z in range(0,len(M_C_df)):
+                    cur_1.execute(c_sql,tuple(M_C_df.iloc[z]))#-->z
+                    myconnection_1.commit()
+                    
+                cur_1.execute('CREATE TABLE IF NOT EXISTS Playlist ('
+                        'Chan_playlist_id VARCHAR(30) REFERENCES Channel(Chan_playlist_id),'
+                        'video_id VARCHAR(30) UNIQUE NOT NULL)')
 
-            pl_sql = 'Insert into Playlist(Chan_playlist_id,video_id)values(%s,%s)'
-            for u in range(0,len(M_P_df)):
-                cur_1.execute(pl_sql,tuple(M_P_df.iloc[u]))#-->u
-                myconnection_1.commit()
-                
-            cur_1.execute('CREATE TABLE IF NOT EXISTS Videos_info ('
-                    'video_id VARCHAR(30) REFERENCES Playlist(video_id),'
-                    'title MEDIUMTEXT,'
-                    'des MEDIUMTEXT,'
-                    'published_at Varchar(30),'
-                    'viewCount MEDIUMINT,'
-                    'like_count INT,'
-                    'dislike_count INT,'
-                    'fav_count INT,'
-                    'duration VARCHAR(20),'
-                    'thum_url MEDIUMTEXT,'
-                    'caption_status VARCHAR(6))')
+                pl_sql = 'Insert into Playlist(Chan_playlist_id,video_id)values(%s,%s)'
+                for u in range(0,len(M_P_df)):
+                    cur_1.execute(pl_sql,tuple(M_P_df.iloc[u]))#-->u
+                    myconnection_1.commit()
+                    
+                cur_1.execute('CREATE TABLE IF NOT EXISTS Videos_info ('
+                        'video_id VARCHAR(30) REFERENCES Playlist(video_id),'
+                        'title MEDIUMTEXT,'
+                        'des MEDIUMTEXT,'
+                        'published_at Varchar(30),'
+                        'viewCount MEDIUMINT,'
+                        'like_count INT,'
+                        'dislike_count INT,'
+                        'fav_count INT,'
+                        'duration VARCHAR(20),'
+                        'thum_url MEDIUMTEXT,'
+                        'caption_status VARCHAR(6))')
 
-            v_sql = 'INSERT INTO Videos_info (video_id, title, des, published_at, viewCount, like_count, dislike_count, fav_count, duration, thum_url, caption_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-            for n in range(0, len(M_V_df)):
-                cur_1.execute(v_sql, tuple(M_V_df.iloc[n]))
-                myconnection_1.commit()
+                v_sql = 'INSERT INTO Videos_info (video_id, title, des, published_at, viewCount, like_count, dislike_count, fav_count, duration, thum_url, caption_status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
+                for n in range(0, len(M_V_df)):
+                    cur_1.execute(v_sql, tuple(M_V_df.iloc[n]))
+                    myconnection_1.commit()
 
-            cur_1.execute('CREATE TABLE IF NOT EXISTS COMMENT ('
-                        'comment_id varchar(26) PRIMARY KEY,'
-                        'video_id VARCHAR(30) REFERENCES Videos_info(video_id),'
-                        'comment_text MEDIUMTEXT,'
-                        'Authour MEDIUMTEXT,'
-                        'Published_date VARCHAR(30))')
-                
-            cm_sql = 'INSERT INTO COMMENT (comment_id,video_id,comment_text,Authour,Published_date) VALUES (%s, %s, %s, %s, %s)'
-            for h in range(0, len(M_CM_df)):
-                cur_1.execute(cm_sql, tuple(M_CM_df.iloc[h]))
-                myconnection_1.commit()
-                
-            #Closing Connections:
-            cur_1.close()
-            myconnection_1.close()
-
-            st.success("The Records Fetched From Mongo DB Were Inserted In To My-SQL WorkBench")
-        else:
-            st.warning("""
-                        
-                        !!!!!!!!!.......Sorry........!!!!!!!!!,
-                        
-                        You Are Trying To Migrate More Than One Channel_ID At A Time,
-                        
-                        Provide your Channel ID's One By One For Data Migration
-                        
-                        !!!!!!!!........Please Check Your Provided Inputs......!!!!!!!!! 
-                        
-                        """)
-        
+                cur_1.execute('CREATE TABLE IF NOT EXISTS COMMENT ('
+                            'comment_id varchar(26) PRIMARY KEY,'
+                            'video_id VARCHAR(30) REFERENCES Videos_info(video_id),'
+                            'comment_text MEDIUMTEXT,'
+                            'Authour MEDIUMTEXT,'
+                            'Published_date VARCHAR(30))')
+                    
+                cm_sql = 'INSERT INTO COMMENT (comment_id,video_id,comment_text,Authour,Published_date) VALUES (%s, %s, %s, %s, %s)'
+                for h in range(0, len(M_CM_df)):
+                    cur_1.execute(cm_sql, tuple(M_CM_df.iloc[h]))
+                    myconnection_1.commit()
+                    
+                #Closing Connections:
+                cur_1.close()
+                myconnection_1.close()
+                st.success("The Records Fetched From MongoDB Were Inserted In To My-SQL WorkBench")
+            except:
+                st.error("You Are Trying To Migrate A Duplicate Record in SQL-Workbench,Please Change Your Input")
+               
     # Questions Section:
     st.subheader("Questions")
     conn = pymysql.connect(host='127.0.0.1', user='root', password='test', database='Youtubedb_ST_FINAL_1')
